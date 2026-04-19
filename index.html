@@ -3,118 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生生日看板 & 溫度比較系統</title>
+    <title>學生氣象、溫度與感受管理系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        :root { --dash-border: 2px dashed #888; --main-bg: #f0f2f5; }
+        :root { --dash-border: 2px dashed #888; --main-bg: #f4f7f9; }
         body { background-color: var(--main-bg); padding: 20px; font-family: "Microsoft JhengHei", sans-serif; }
         
-        /* 導覽列樣式 */
-        .nav-tabs { margin-bottom: 20px; border-bottom: 2px solid #ddd; }
-        .nav-link { cursor: pointer; font-weight: bold; color: #555; }
+        .nav-tabs { margin-bottom: 25px; border-bottom: 2px solid #ddd; }
+        .nav-link { cursor: pointer; font-weight: bold; color: #666; font-size: 0.95rem; }
         .nav-link.active { color: #000 !important; background-color: #fff !important; border: 2px solid #888 !important; border-bottom-color: transparent !important; }
 
         /* 看板樣式 */
         .dashboard-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1050px; margin: 0 auto; }
         .info-box { border: var(--dash-border); border-radius: 20px; padding: 20px; background: white; text-align: center; min-height: 330px; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .label-tag { position: absolute; top: 10px; left: 15px; font-weight: bold; color: #aaa; font-size: 0.9rem; }
-        
+        .label-tag { position: absolute; top: 10px; left: 15px; font-weight: bold; color: #bbb; font-size: 0.8rem; }
         .display-img { width: 120px; height: 120px; object-fit: contain; margin-bottom: 10px; border-radius: 10px; }
-        .temp-display { font-size: 5rem; font-weight: 800; line-height: 1; color: #2c3e50; }
+        .temp-display { font-size: 5rem; font-weight: 800; color: #2c3e50; }
         .temp-btn { width: 45px; height: 45px; border-radius: 50%; border: 1px solid #ddd; background: #fff; font-size: 1.5rem; }
-        
-        .custom-input { border: 1px solid #ddd; padding: 8px; border-radius: 10px; font-size: 1.1rem; width: 160px; text-align: center; }
+        .custom-input { border: 1px solid #ddd; padding: 8px; border-radius: 10px; font-size: 1.1rem; width: 165px; text-align: center; }
         .sub-icon-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 12px; width: 100%; }
-        .sub-icon-list img { width: 35px; height: 35px; cursor: pointer; transition: 0.2s; border-radius: 4px; }
-        .sub-icon-list img:hover { transform: scale(1.2); }
+        .sub-icon-list img { width: 35px; height: 35px; cursor: pointer; border-radius: 4px; }
         .clickable { cursor: pointer; transition: 0.3s; }
 
-        /* 比較頁面樣式 */
-        #comparison-page { max-width: 1050px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; border: var(--dash-border); }
-        .student-list-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .student-list-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 50%; margin-right: 15px; border: 1px solid #ddd; }
-        .student-info { flex-grow: 1; }
-        .chart-container { position: relative; height: 400px; width: 100%; margin-bottom: 30px; }
+        /* 全體檢視卡片樣式 */
+        .grid-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .status-card { background: white; border: 1px solid #ddd; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .status-card .avatar { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid #eee; margin-bottom: 5px; }
+        .status-card .bday-text { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+        
+        /* 圖標與溫度並排容器 */
+        .data-row { display: flex; justify-content: center; align-items: center; gap: 15px; background: #f0f7ff; padding: 15px; border-radius: 12px; border: 1px solid #e0eaf5; }
+        .status-card .main-icon { width: 70px; height: 70px; object-fit: contain; }
+        .status-card .temp-val { font-size: 2.5rem; font-weight: 800; color: #007bff; line-height: 1; }
+        .status-card .icon-label { font-size: 0.8rem; color: #555; margin-top: 5px; font-weight: bold; }
+
+        #chart-wrapper { position: relative; height: 580px; width: 100%; background: white; padding: 20px; border-radius: 20px; border: var(--dash-border); }
+        .toolbar { max-width: 1050px; margin: 0 auto 15px; display: flex; gap: 10px; justify-content: flex-end; }
     </style>
 </head>
 <body>
 
-<ul class="nav nav-tabs justify-content-center" id="pageTab">
-    <li class="nav-item"><a class="nav-link active" onclick="switchPage('dashboard')">個人資訊看板</a></li>
-    <li class="nav-item"><a class="nav-link" onclick="switchPage('comparison')">全體溫度比較頁面</a></li>
+<ul class="nav nav-tabs justify-content-center" id="mainTab">
+    <li class="nav-item"><a class="nav-link active" onclick="switchPage('dashboard')">🏠 個人看板</a></li>
+    <li class="nav-item"><a class="nav-link" onclick="switchPage('comparison')">📊 溫度比較</a></li>
+    <li class="nav-item"><a class="nav-link" onclick="switchPage('weather-all')">☁️ 全體氣象</a></li>
+    <li class="nav-item"><a class="nav-link" onclick="switchPage('feel-all')">😊 全體感受</a></li>
 </ul>
 
-<div id="dashboard-view">
-    <div class="d-flex justify-content-end mb-3 gap-2" style="max-width:1050px; margin: 0 auto;">
+<div id="dashboard-page">
+    <div class="toolbar">
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
-        <button class="btn btn-sm btn-outline-dark" onclick="document.getElementById('importFile').click()">📥 匯入</button>
-        <button class="btn btn-sm btn-dark" onclick="exportJSON()">📤 匯出</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('importFile').click()">📥 匯入</button>
+        <button class="btn btn-sm btn-secondary" onclick="exportJSON()">📤 匯出</button>
     </div>
-
     <div class="dashboard-container">
-        <div class="info-box">
-            <span class="label-tag">a區</span>
-            <img id="a-img" class="display-img clickable" src="" onclick="openStudentModal()">
-            <h4 id="a-name">未選取學生</h4>
-            <div class="mt-2">
-                <label class="small text-muted d-block">🎂 生日設定</label>
-                <input type="date" id="a-birthday-picker" class="custom-input" onchange="savePersonalData()">
-            </div>
-        </div>
-
-        <div class="info-box">
-            <span class="label-tag">b區</span>
-            <div class="temp-display"><span id="temp-val">20</span>°C</div>
-            <div class="d-flex gap-3">
-                <button class="temp-btn" onclick="adjustTemp(1)">+</button>
-                <button class="temp-btn" onclick="adjustTemp(-1)">-</button>
-            </div>
-        </div>
-
-        <div class="info-box clickable" onclick="openWeatherModal()">
-            <span class="label-tag">c區</span>
-            <div id="c-display"><p class="text-secondary">點擊選取氣象</p></div>
-        </div>
-
-        <div class="info-box">
-            <span class="label-tag">d區 (24H)</span>
-            <img src="https://img.icons8.com/fluency/96/sunrise.png" width="60">
-            <div class="mt-2 fw-bold">日出時間</div>
-            <input type="time" id="time-sunrise" class="custom-input mt-1" onchange="savePersonalData()">
-        </div>
-
-        <div class="info-box">
-            <span class="label-tag">e區 (24H)</span>
-            <img src="https://img.icons8.com/fluency/96/sunset.png" width="60">
-            <div class="mt-2 fw-bold">日落時間</div>
-            <input type="time" id="time-sunset" class="custom-input mt-1" onchange="savePersonalData()">
-        </div>
-
-        <div class="info-box">
-            <span class="label-tag">f區</span>
-            <div id="f-display" style="min-height: 140px;" class="d-flex flex-column align-items-center">
-                 <p class="text-secondary mt-5">選取下方感受</p>
-            </div>
-            <div id="f-list" class="sub-icon-list"></div>
-        </div>
+        <div class="info-box"><span class="label-tag">A區 - 資訊</span><img id="a-img" class="display-img clickable" src="" onclick="openStudentModal()"><h4 id="a-name">選取學生</h4><input type="date" id="a-birthday-picker" class="custom-input" onchange="savePersonalData()"></div>
+        <div class="info-box"><span class="label-tag">B區 - 溫度</span><div class="temp-display"><span id="temp-val">20</span>°C</div><div class="d-flex gap-3"><button class="temp-btn" onclick="adjustTemp(1)">+</button><button class="temp-btn" onclick="adjustTemp(-1)">-</button></div></div>
+        <div class="info-box clickable" onclick="openWeatherModal()"><span class="label-tag">C區 - 氣象</span><div id="c-display">點擊選取</div></div>
+        <div class="info-box"><span class="label-tag">D區 - 日出</span><img src="https://img.icons8.com/fluency/96/sunrise.png" width="60"><input type="time" id="time-sunrise" class="custom-input mt-2" onchange="savePersonalData()"></div>
+        <div class="info-box"><span class="label-tag">E區 - 日落</span><img src="https://img.icons8.com/fluency/96/sunset.png" width="60"><input type="time" id="time-sunset" class="custom-input mt-2" onchange="savePersonalData()"></div>
+        <div class="info-box"><span class="label-tag">F區 - 感受</span><div id="f-display" style="min-height:140px;">選取感受</div><div id="f-list" class="sub-icon-list"></div></div>
     </div>
 </div>
 
-<div id="comparison-view" style="display: none;">
-    <div id="comparison-page">
-        <h3 class="text-center mb-4">全體學生溫度比較圖</h3>
-        
-        <div class="chart-container">
-            <canvas id="tempChart"></canvas>
-        </div>
+<div id="comparison-page" style="display: none;"><div id="chart-wrapper"><canvas id="tempChart"></canvas></div></div>
 
-        <hr>
-        <h4 class="mb-3">學生詳細資訊清單</h4>
-        <div id="student-list-container">
-            </div>
-    </div>
+<div id="weather-all-page" style="display: none;">
+    <div class="grid-view" id="weather-grid"></div>
+</div>
+
+<div id="feel-all-page" style="display: none;">
+    <div class="grid-view" id="feel-grid"></div>
 </div>
 
 <div class="modal fade" id="studentModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>學生名單</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body d-flex flex-wrap justify-content-center gap-3" id="student-options"></div></div></div></div>
@@ -123,46 +83,36 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const GITHUB = "https://raw.githubusercontent.com/tpectim/weather/main/";
-    let allStudents = [], weatherData = [], feelData = [];
-    let selectedStudentId = null;
-    let myChart = null;
-
-    // 頁面切換邏輯
-    function switchPage(page) {
-        if(page === 'dashboard') {
-            document.getElementById('dashboard-view').style.display = 'block';
-            document.getElementById('comparison-view').style.display = 'none';
-            document.querySelectorAll('.nav-link')[0].classList.add('active');
-            document.querySelectorAll('.nav-link')[1].classList.remove('active');
-        } else {
-            document.getElementById('dashboard-view').style.display = 'none';
-            document.getElementById('comparison-view').style.display = 'block';
-            document.querySelectorAll('.nav-link')[1].classList.add('active');
-            document.querySelectorAll('.nav-link')[0].classList.remove('active');
-            renderComparisonPage();
-        }
-    }
+    let allStudents = [], weatherData = [], feelData = [], selectedStudentId = null, myChart = null;
 
     window.onload = async () => {
-        await loadInitialData();
+        allStudents = await (await fetch(GITHUB + '學生大頭b組.json')).json();
+        weatherData = await (await fetch(GITHUB + '氣象icon.json')).json();
+        feelData = await (await fetch(GITHUB + '溫度感受.json')).json();
+        renderSelectionLists();
         const lastId = localStorage.getItem('lastSelectedStudent');
         if(lastId) selectStudent(lastId);
     };
 
-    async function loadInitialData() {
-        allStudents = await (await fetch(GITHUB + '學生大頭b組.json')).json();
-        weatherData = await (await fetch(GITHUB + '氣象icon.json')).json();
-        feelData = await (await fetch(GITHUB + '溫度感受.json')).json();
+    function switchPage(page) {
+        const pages = ['dashboard', 'comparison', 'weather-all', 'feel-all'];
+        pages.forEach(p => document.getElementById(p + '-page').style.display = (page === p ? 'block' : 'none'));
+        document.querySelectorAll('.nav-link').forEach((link, idx) => link.classList.toggle('active', pages[idx] === page));
+        
+        if(page === 'comparison') renderChart();
+        if(page === 'weather-all') renderStatusGrid('weather');
+        if(page === 'feel-all') renderStatusGrid('feel');
+    }
 
+    function renderSelectionLists() {
         const sContainer = document.getElementById('student-options');
         allStudents.forEach(s => {
             const div = document.createElement('div');
-            div.className = "text-center clickable p-2 border rounded"; div.style.width = "105px";
-            div.innerHTML = `<img src="${s.original}" style="width:80px;height:80px;object-fit:cover;border-radius:5px;"><br><small>${s.name}</small>`;
+            div.className = "text-center clickable p-2 border rounded"; div.style.width = "100px";
+            div.innerHTML = `<img src="${s.original}" style="width:70px;height:70px;object-fit:cover;"><br><small>${s.name}</small>`;
             div.onclick = () => selectStudent(s.id);
             sContainer.appendChild(div);
         });
-
         const wContainer = document.getElementById('weather-options');
         weatherData.forEach(item => {
             const img = document.createElement('img');
@@ -170,7 +120,6 @@
             img.onclick = () => { updateCZone(item.original, item.name); savePersonalData(); bootstrap.Modal.getInstance(document.getElementById('weatherModal')).hide(); };
             wContainer.appendChild(img);
         });
-
         const fList = document.getElementById('f-list');
         feelData.forEach(item => {
             const img = document.createElement('img');
@@ -180,153 +129,119 @@
         });
     }
 
-    // 渲染比較頁面內容
-    function renderComparisonPage() {
-        const labels = [];
-        const temps = [];
-        const listContainer = document.getElementById('student-list-container');
-        listContainer.innerHTML = ''; // 清空舊內容
-
+    // 更新：姓名下加生日，圖標右邊加溫度
+    function renderStatusGrid(mode) {
+        const container = document.getElementById(mode + '-grid');
+        container.innerHTML = '';
         allStudents.forEach(s => {
             const mem = JSON.parse(localStorage.getItem('student_mem_' + s.id) || '{}');
-            const currentTemp = parseInt(mem.temp || "20");
-            const currentBday = mem.birthday || s.content.replace(/\//g, '-');
+            const card = document.createElement('div');
+            card.className = 'status-card';
+            
+            const iconImg = mode === 'weather' ? (mem.weatherImg || 'https://via.placeholder.com/80?text=%3F') : (mem.feelImg || 'https://via.placeholder.com/80?text=%3F');
+            const iconName = mode === 'weather' ? (mem.weatherName || '未設定') : (mem.feelName || '未設定');
 
-            labels.push(s.name);
-            temps.push(currentTemp);
-
-            // 建立清單項目
-            const item = document.createElement('div');
-            item.className = 'student-list-item';
-            item.innerHTML = `
-                <img src="${s.original}">
-                <div class="student-info">
-                    <strong>${s.name}</strong><br>
-                    <small class="text-muted">🎂 生日：${currentBday} | 🌡️ 設定溫度：${currentTemp}°C</small>
+            card.innerHTML = `
+                <img src="${s.original}" class="avatar">
+                <h5 class="mb-0">${s.name}</h5>
+                <div class="bday-text">🎂 ${mem.birthday || s.content}</div>
+                <div class="data-row">
+                    <div class="icon-box">
+                        <img src="${iconImg}" class="main-icon">
+                        <div class="icon-label">${iconName}</div>
+                    </div>
+                    <div class="temp-box">
+                        <div class="temp-val">${mem.temp || '20'}°</div>
+                        <div class="icon-label">溫度</div>
+                    </div>
                 </div>
             `;
-            listContainer.appendChild(item);
+            container.appendChild(card);
         });
+    }
 
-        // 渲染圖表
+    function renderChart() {
+        const labels = [], temps = [], bdays = [], imgObjs = [];
+        allStudents.forEach(s => {
+            const mem = JSON.parse(localStorage.getItem('student_mem_' + s.id) || '{}');
+            labels.push(s.name); temps.push(parseInt(mem.temp || "20")); bdays.push(mem.birthday || s.content);
+            const img = new Image(); img.src = s.original; imgObjs.push(img);
+        });
         const ctx = document.getElementById('tempChart').getContext('2d');
-        if (myChart) myChart.destroy(); // 銷毀舊圖表以重繪
-
+        if (myChart) myChart.destroy();
         myChart = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: '學生設定溫度 (°C)',
-                    data: temps,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    // 在長條圖頂端顯示文字
-                    tooltip: { enabled: true }
-                },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: '溫度 (°C)' } }
-                }
-            },
+            data: { labels, datasets: [{ data: temps, backgroundColor: '#3498db88' }] },
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: { bottom: 120, top: 30 } }, plugins: { legend: { display: false } } },
             plugins: [{
-                // 自訂插件：在長條圖頂端繪製數值
-                id: 'topLabels',
-                afterDatasetsDraw(chart) {
-                    const {ctx, scales: {x, y}} = chart;
-                    ctx.font = 'bold 12px Arial';
-                    ctx.fillStyle = '#333';
-                    ctx.textAlign = 'center';
-                    chart.data.datasets[0].data.forEach((value, index) => {
-                        const xPos = x.getPixelForValue(index);
-                        const yPos = y.getPixelForValue(value);
-                        ctx.fillText(value + '°C', xPos, yPos - 10);
+                id: 'customDeco',
+                afterDraw: (c) => {
+                    const { ctx, scales: { x, y } } = c;
+                    c.data.datasets[0].data.forEach((val, i) => {
+                        const px = x.getPixelForValue(i), py = y.getPixelForValue(val), size = 45, yBase = x.bottom + 20;
+                        ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+                        ctx.fillText(val + '°C', px, py - 10);
+                        if (imgObjs[i].complete) {
+                            ctx.save(); ctx.beginPath(); ctx.arc(px, yBase + size/2, size/2, 0, Math.PI*2); ctx.clip();
+                            ctx.drawImage(imgObjs[i], px - size/2, yBase, size, size); ctx.restore();
+                        }
+                        ctx.fillStyle = '#7f8c8d'; ctx.font = '11px Arial'; ctx.fillText(bdays[i], px, yBase + size + 20);
                     });
                 }
             }]
         });
     }
 
-    // --- 原有邏輯保持不變 ---
     function selectStudent(id) {
-        selectedStudentId = id;
-        localStorage.setItem('lastSelectedStudent', id);
+        selectedStudentId = id; localStorage.setItem('lastSelectedStudent', id);
         const s = allStudents.find(x => x.id === id);
-        document.getElementById('a-img').src = s.original;
-        document.getElementById('a-name').innerText = s.name;
-        loadPersonalData(id, s.content);
-        const modal = bootstrap.Modal.getInstance(document.getElementById('studentModal'));
-        if(modal) modal.hide();
+        document.getElementById('a-img').src = s.original; document.getElementById('a-name').innerText = s.name;
+        const saved = localStorage.getItem('student_mem_' + id);
+        if(saved) {
+            const d = JSON.parse(saved);
+            document.getElementById('temp-val').innerText = d.temp;
+            document.getElementById('a-birthday-picker').value = d.birthday;
+            if(d.weatherImg) updateCZone(d.weatherImg, d.weatherName); else clearCZone();
+            if(d.feelImg) updateFZone(d.feelImg, d.feelName); else clearFZone();
+            document.getElementById('time-sunrise').value = d.sunrise; document.getElementById('time-sunset').value = d.sunset;
+        } else {
+            document.getElementById('temp-val').innerText = "20"; document.getElementById('a-birthday-picker').value = s.content.replace(/\//g, '-');
+            clearCZone(); clearFZone();
+        }
+        const m = bootstrap.Modal.getInstance(document.getElementById('studentModal')); if(m) m.hide();
     }
 
     function savePersonalData() {
         if(!selectedStudentId) return;
-        const data = {
-            temp: document.getElementById('temp-val').innerText,
-            birthday: document.getElementById('a-birthday-picker').value,
-            weatherName: document.querySelector('#c-display h4')?.innerText || '',
-            weatherImg: document.querySelector('#c-display img')?.src || '',
-            feelName: document.querySelector('#f-display h4')?.innerText || '',
-            feelImg: document.querySelector('#f-display img')?.src || '',
-            sunrise: document.getElementById('time-sunrise').value,
-            sunset: document.getElementById('time-sunset').value
-        };
-        localStorage.setItem('student_mem_' + selectedStudentId, JSON.stringify(data));
+        localStorage.setItem('student_mem_' + selectedStudentId, JSON.stringify({
+            temp: document.getElementById('temp-val').innerText, birthday: document.getElementById('a-birthday-picker').value,
+            weatherName: document.querySelector('#c-display h4')?.innerText || '', weatherImg: document.querySelector('#c-display img')?.src || '',
+            feelName: document.querySelector('#f-display h4')?.innerText || '', feelImg: document.querySelector('#f-display img')?.src || '',
+            sunrise: document.getElementById('time-sunrise').value, sunset: document.getElementById('time-sunset').value
+        }));
     }
-
-    function loadPersonalData(id, defaultBirthday) {
-        const saved = localStorage.getItem('student_mem_' + id);
-        if(saved) {
-            const data = JSON.parse(saved);
-            document.getElementById('temp-val').innerText = data.temp || "20";
-            document.getElementById('a-birthday-picker').value = data.birthday || defaultBirthday.replace(/\//g, '-');
-            if(data.weatherImg) updateCZone(data.weatherImg, data.weatherName); else clearCZone();
-            if(data.feelImg) updateFZone(data.feelImg, data.feelName); else clearFZone();
-            document.getElementById('time-sunrise').value = data.sunrise || "";
-            document.getElementById('time-sunset').value = data.sunset || "";
-        } else {
-            document.getElementById('temp-val').innerText = "20";
-            document.getElementById('a-birthday-picker').value = defaultBirthday.replace(/\//g, '-');
-            document.getElementById('time-sunrise').value = ""; document.getElementById('time-sunset').value = "";
-            clearCZone(); clearFZone();
-        }
-    }
-
     function adjustTemp(v) { document.getElementById('temp-val').innerText = parseInt(document.getElementById('temp-val').innerText) + v; savePersonalData(); }
-    function updateCZone(img, name) { document.getElementById('c-display').innerHTML = `<img src="${img}" class="display-img"><h4 class="mt-2">${name}</h4>`; }
-    function clearCZone() { document.getElementById('c-display').innerHTML = '<p class="text-secondary">點擊選取氣象</p>'; }
-    function updateFZone(img, name) { document.getElementById('f-display').innerHTML = `<img src="${img}" style="width:100px;"><h4 class="mt-2">${name}</h4>`; }
-    function clearFZone() { document.getElementById('f-display').innerHTML = '<p class="text-secondary mt-5">選取下方感受</p>'; }
+    function updateCZone(i, n) { document.getElementById('c-display').innerHTML = `<img src="${i}" class="display-img"><h4 class="mt-2">${n}</h4>`; }
+    function clearCZone() { document.getElementById('c-display').innerHTML = '點擊選取'; }
+    function updateFZone(i, n) { document.getElementById('f-display').innerHTML = `<img src="${i}" style="width:100px;height:100px;object-fit:contain;"><h4 class="mt-2">${n}</h4>`; }
+    function clearFZone() { document.getElementById('f-display').innerHTML = '選取感受'; }
     function openStudentModal() { new bootstrap.Modal(document.getElementById('studentModal')).show(); }
     function openWeatherModal() { new bootstrap.Modal(document.getElementById('weatherModal')).show(); }
-
     function exportJSON() {
-        const exportData = allStudents.map(s => {
-            const mem = JSON.parse(localStorage.getItem('student_mem_' + s.id) || '{}');
-            return { "id": s.id, "name": s.name, "attr1": mem.temp || "20", "attr2": mem.weatherName || "", "attr3": mem.weatherImg || "", "attr4": mem.feelName || "", "attr5": mem.feelImg || "", "attr6": mem.sunrise || "", "attr7": mem.sunset || "", "content": mem.birthday || s.content, "original": s.original };
+        const data = allStudents.map(s => {
+            const m = JSON.parse(localStorage.getItem('student_mem_' + s.id) || '{}');
+            return { id: s.id, name: s.name, content: m.birthday || s.content, original: s.original, attr1: m.temp, attr2: m.weatherName, attr3: m.weatherImg, attr4: m.feelName, attr5: m.feelImg, attr6: m.sunrise, attr7: m.sunset };
         });
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `學生成果資料.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })); a.download = `看板數據.json`; a.click();
     }
-
-    function importJSON(event) {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            JSON.parse(e.target.result).forEach(item => {
-                const mem = { temp: item.attr1, weatherName: item.attr2, weatherImg: item.attr3, feelName: item.attr4, feelImg: item.attr5, sunrise: item.attr6, sunset: item.attr7, birthday: item.content };
-                localStorage.setItem('student_mem_' + item.id, JSON.stringify(mem));
+    function importJSON(e) {
+        const reader = new FileReader(); reader.onload = (ev) => {
+            JSON.parse(ev.target.result).forEach(it => {
+                localStorage.setItem('student_mem_' + it.id, JSON.stringify({ temp: it.attr1, weatherName: it.attr2, weatherImg: it.attr3, feelName: it.attr4, feelImg: it.attr5, sunrise: it.attr6, sunset: it.attr7, birthday: it.content }));
             });
             location.reload();
         };
-        reader.readAsText(file);
+        reader.readAsText(e.target.files[0]);
     }
 </script>
 </body>
